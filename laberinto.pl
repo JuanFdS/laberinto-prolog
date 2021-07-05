@@ -1,5 +1,6 @@
 :- use_module(library(tty)).
 :- use_module(library(tipc/tipc_linda)).
+:- use_module(library(thread)).
 
 write_matrix(Matrix):-
     forall(member(Column, Matrix), write_column(Column)).
@@ -9,9 +10,9 @@ write_column(Column):-
     write("\n").
 
 write_matrix_with(Matrix, Writer):-
-    length(Matrix, L),
-    forall(nth1(N, Matrix, Column),
-            (forall(member(X, Column), call(Writer, X, N)), (S is L - N, call(Writer, "\n", S)))).
+    forall(nth1(Y, Matrix, Column),
+            (forall(nth1(X, Column, Value), call(Writer, Value, posicion(X, Y))),
+             call(Writer, "\n", posicion(0, Y)))).
 
 nth_matrix1(posicion(X, Y), Matrix, Element):-
     length(Matrix, Ly),
@@ -21,17 +22,16 @@ nth_matrix1(posicion(X, Y), Matrix, Element):-
     between(0, Lx, X),
     nth1(X, Column, Element).
 
-
 laberinto([
   [.., .., .., //, //, //, <>],
   [.., .., .., //, //, .., ..],
   [.., .., .., //, .., .., //],
   [.., .., .., //, .., //, //],
   [.., //, .., //, .., //, //],
-  [.., .., .., .., .., <>, //],
+  [.., .., .., .., .., .., //],
   [//, .., //, .., //, //, //],
   [.., .., //, .., //, //, //],
-  [//, //, //, .., .., <>, //]  
+  [//, //, //, .., .., .., //]  
 ]).
 
 laberinto2([
@@ -82,6 +82,42 @@ laberinto_grande([
 [//,//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//]
     ]).
 
+laberinto_grande2([
+    [//,//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	//,	..,	//,	..,	//,	..,	..,	..,	//,	..,	..,	..,	//,	..,	//,	..,	..,	..,	//,	..,	..,	..,	..,	..,	//,	..,	//,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	//,	..,	..,	..,	//,	..,	..,	..,	//,	..,	..,	..,	//,	..,	..,	..,	//,	..,	//,	..,	//,	..,	//,	..,	..,	..,	//,	..,	//,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	//,	..,	//,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	//,	..,	//,	..,	..,	..,	..,	..,	..,	..,	//,	..,	<>],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[..,..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	//,	..,	..,	..,	//,	..,	..,	..,	//,	..,	//,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	//,	..,	..,	..,	//,	..,	//,	..,	..,	..,	..,	..,	//,	..,	//,	..,	..,	..,	..,	..,	..,	..,	//,	..,	//,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	//,	..,	//,	..,	//,	..,	..,	..,	..,	..,	..,	..,	//,	..,	//,	..,	//,	..,	//,	..,	//,	..,	..,	..,	//,	..,	..,	..,	//,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//,	..,	..,	..,	..,	..,	..,	..,	..,	..,	//],
+[//,//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//,	//]
+    ]).
+
 libre(..).
 libre(<>).
 
@@ -102,137 +138,156 @@ tras_moverse(derecha, posicion(X, Y), posicion(NuevaX, Y)):- NuevaX is X + 1.
 tras_moverse(abajo, posicion(X, Y), posicion(X, NuevaY)):- NuevaY is Y + 1.
 
 resolver_laberinto(PosInicial, Laberinto, Camino):-
-    % dibujar_laberinto(PosInicial, [], Laberinto),
-    tty:string_action(ho),
-    length(Laberinto, L),
-    do_times(write(" "), L),
-    write_matrix_with(Laberinto, write_cell),
-    resolver_laberinto_dejando_migas(PosInicial, Laberinto, [], Camino).
+    resolver_laberinto_con(PosInicial, Laberinto, Camino, []).
 
-resolver_laberinto_dejando_migas(PosInicial, Laberinto, Migas, []):-
-    nth_matrix1(PosInicial, Laberinto, Casillero),
-    llegada(Casillero),
-    dibujar_laberinto(PosInicial, Migas, Laberinto).
+resolver_laberinto_con(PosInicial, Laberinto, Opciones, Camino):-
+    maze_writer_for(Opciones, Writer),
+    dibujar_laberinto_con(PosInicial, [], Laberinto, Writer, maze),
+    resolver_laberinto_dejando_migas(PosInicial, Laberinto, [], Writer, Camino).
 
-resolver_laberinto_dejando_migas(PosInicial, Laberinto, [], [ miga(PosInicial, Direccion) | CaminoRestante ]):-
-    nth_matrix1(PosInicial, Laberinto, Casillero),
-    not(llegada(Casillero)),
-    paso(PosInicial, Laberinto, Direccion, NuevaPos),
-    dibujar_laberinto(PosInicial, [], Laberinto),
-    resolver_laberinto_dejando_migas(NuevaPos, Laberinto, [ miga(PosInicial, Direccion) ], CaminoRestante).
+maze_writer_for([ color(ColorChooser) | Opciones ], color_write(ColorChooser, PreviousWriter)):-
+    maze_writer_for(Opciones, PreviousWriter).
+maze_writer_for([ torcido | Opciones ], torcido_write(PreviousWriter)):-
+    maze_writer_for(Opciones, PreviousWriter).
+maze_writer_for([ ], regular_write).
 
-resolver_laberinto_dejando_migas(PosInicial, Laberinto, MigasDejadas, [ miga(PosInicial, Direccion) | CaminoRestante ]):-
-    nth_matrix1(PosInicial, Laberinto, Casillero),
-    not(llegada(Casillero)),
-    paso(PosInicial, Laberinto, Direccion, NuevaPos),
-    last(MigasDejadas, miga(_, DireccionAnterior)),
-    not((opuestas(Direccion, DireccionAnterior), dibujar_camino_descartado(PosInicial, [ ], Laberinto))),
-    not((member(miga(PosInicial, _), MigasDejadas), dibujar_camino_descartado(PosInicial, [ ], Laberinto))),
-    dibujar_laberinto(PosInicial, MigasDejadas, Laberinto),
-    append(MigasDejadas, [ miga(PosInicial, Direccion) ], MigasSiguientes),
-    (resolver_laberinto_dejando_migas(NuevaPos, Laberinto, MigasSiguientes, CaminoRestante) -> true;
-    (dibujar_camino_descartado(PosInicial, [ ], Laberinto), false)).
+resuelto(Posicion, Laberinto):-
+    nth_matrix1(Posicion, Laberinto, Casillero),
+    llegada(Casillero).
 
-dibujar_camino_descartado(Pos, Migas, Laberinto):-
-    tty:string_action(ho),
-    laberinto_con_personaje_y_migas(Laberinto, personaje(Pos, "-@"), Migas, LaberintoDibujable),
-    write_matrix_with(LaberintoDibujable, write_discarded_path).
+resolver_laberinto_dejando_migas(PosInicial, Laberinto, Migas, Writer, []):-
+    resuelto(PosInicial, Laberinto),
+    dibujar_laberinto_con(PosInicial, Migas, Laberinto, Writer, path).
+
+resolver_laberinto_dejando_migas(PosInicial, Laberinto, MigasDejadas, Writer, [ miga(PosInicial, Direccion) | CaminoRestante ]):-
+    not(resuelto(PosInicial, Laberinto)),
+    paso(PosInicial, Laberinto, Direccion, NuevaPos, MigasDejadas),
+    dibujar_laberinto_con(PosInicial, MigasDejadas, Laberinto, Writer, path),
+    resolver_laberinto_dejando_migas(NuevaPos, Laberinto,
+                                     [ miga(PosInicial, Direccion) | MigasDejadas ],
+                                     Writer,
+                                     CaminoRestante).
+
+resolver_laberinto_dejando_migas(Pos, Laberinto, _, Writer, _):-
+    dibujar_laberinto_con(Pos, [], Laberinto, Writer, discarded_path),
+    false.
 
 write_in_color(Color, Text):-
     ansi_format(Color, Text, []).
 
-% write_cell(..):- write("  "), !.
-
-write_cell(.., _):-
-    write("  "), !.
-
-% write_cell("\n", N):-
-%     write("\n"), !.
-write_cell("\n", N):-
-    write("\n"),
-    do_times(write(" "), N).
-
-write_cell(Cell, N):-
-    cell_color(Cell, Color, N),
-    write_in_color(Color, Cell).
+with_color(Color, WriteAction):-
+    with_output_to(string(S), (set_stream(current_output, tty(true)), WriteAction)),
+    write_in_color(Color, S).
 
 do_times(_, 0):- !.
 do_times(Action, Times):- Times > 0, call(Action), NextTimes is Times - 1, do_times(Action, NextTimes).
 
-write_discarded_path("-@", _):-
-    write_in_color([fg(80, 80, 80)], --), !.
-write_discarded_path(Cell, _):-
-    path(Cell), !,
-    write_in_color([fg(80, 80, 80)], --).
-write_discarded_path(Cell, N):-
-    write_path(Cell, N), !.
+cuando_esta(Opcion, Opciones, Accion):-
+    forall(option(Opcion, Opciones), Accion).
 
-write_path(Cell, N):-
-    path(Cell), !,
-    write_cell(Cell, N).
-% write_path(_, _):- !.
-write_path("\n", N):-
-    tty:string_action(do),
-    do_times(tty:string_action(nd), N),
+color_write(ChooseCellColor, Writer, TypeOfWrite, Cell, Position):-
+    call(ChooseCellColor, TypeOfWrite, Cell, Position, Color),
+    with_color(Color, call(Writer, TypeOfWrite, Cell, Position)).
+color_write(ChooseCellColor, Writer, TypeOfWrite, Cell, Position):-
+    not(call(ChooseCellColor, TypeOfWrite, Cell, Position, _)),
+    call(Writer, TypeOfWrite, Cell, Position).
+
+torcido_write(Writer, maze, "\n", posicion(X, Y)):-
+    call(Writer, maze, "\n", posicion(X, Y)), 
+    do_times(write(" "), Y),
     !.
-write_path(Cell, _):-
-    not(path(Cell)), !,
+torcido_write(Writer, TypeOfWrite, "\n", posicion(X, Y)):-
+    TypeOfWrite \= maze,
+    call(Writer, TypeOfWrite, "\n", posicion(X, Y)),
+    do_times(tty:string_action(nd), Y),
+    !.
+torcido_write(Writer, TypeOfWrite, Cell, Position):-
+    call(Writer, TypeOfWrite, Cell, Position).
+
+regular_write(path, "\n", _):-
+    tty:string_action(do),
+    !.
+regular_write(path, Cell, _):-
+    not(path(Cell)),
     tty:string_action(nd),
-    tty:string_action(nd).
+    tty:string_action(nd),
+    !.
+regular_write(path, Cell, _):-
+    path(Cell),
+    write(Cell),
+    !.
+regular_write(discarded_path, Cell, _):-
+    path(Cell),
+    write(--),
+    !.
+regular_write(discarded_path, Cell, _):-
+    not(path(Cell)),
+    regular_write(path, Cell, _),
+    !.
+regular_write(maze, .., _):- write("  "), !.
+regular_write(maze, Cell, _):- write(Cell), !.
 
 path(SimboloDireccion):- simbolo_direccion(_, SimboloDireccion).
 path("-@").
 
+even(N):- mod(N,2) =:= 0.
+odd(N):- mod(N,2) =:= 1.
 
-cell_color(//, [fg(M, 50, O)], N):- O is max(0, min(255, 255 - N * 3)), M is min(255, 150 + N * 3), !.
-cell_color(.., [fg(black)], _):- !.
-cell_color("-@", [fg(M, M, 0)], N):- M is min(255, 150 + N * 3), !.
-cell_color(SimboloDireccion,  [fg(M, 50, 50)], N):- simbolo_direccion(_, SimboloDireccion), M is min(255, 200 + N * 3), !.
-cell_color(<>, [fg(cyan)], _):- !.
-cell_color(_, [fg(white)], _).
+cell_color3(maze, //, posicion(X, Y), [fg(200, 200, 200)]):- even(Y), !.
+cell_color3(maze, //, posicion(X, Y), [fg(255, 255, 255)]):- odd(Y), !.
+cell_color3(maze, <>, _, [fg(cyan)]):- !.
+cell_color3(path, "-@", _, [fg(yellow)]):- !.
+cell_color3(discarded_path, Cell, _, [fg(80, 80, 80)]):- path(Cell), !.
+cell_color3(path, Cell, _, [fg(red)]):- path(Cell), !.
 
-go_back("\n"):-
-    tty:string_action(kR), !.
-go_back(_).
 
-go_forward("\n"):-
-    tty:string_action(kF), !.
-go_forward(_).
+cell_color2(maze, //, posicion(_, N), [fg(O, M, P)]):-
+    O is max(0, min(255, 255 - N * 3)),
+    M is min(255, 150 + N * 3),
+    P is 255 - O,
+    !.
+cell_color2(maze, <>, _, [fg(cyan)]):- !.
+cell_color2(discarded_path, Cell, _, [fg(80, 80, 80)]):- path(Cell), !.
+cell_color2(path, "-@", posicion(_, N), [fg(M, M, 0)]):- M is min(255, 150 + N * 3), !.
+cell_color2(path, _, _, [fg(cyan)]).
 
-resuelto(Pos, Laberinto):-
-    nth_matrix1(Pos, Laberinto, Casillero),
-    llegada(Casillero).
+cell_color(maze, //, posicion(_, N), [fg(M, 50, O)]):- O is max(0, min(255, 255 - N * 3)), M is min(255, 150 + N * 3), !.
+cell_color(maze, <>, _, [fg(cyan)]):- !.
+cell_color(discarded_path, Cell, _, [fg(80, 80, 80)]):- path(Cell), !.
+cell_color(path, "-@", posicion(_, N), [fg(M, M, 0)]):- M is min(255, 150 + N * 3), !.
+cell_color(path, Cell, posicion(_, N), [fg(M, 50, 50)]):- path(Cell), M is min(255, 200 + N * 3), !.
 
-dibujar_laberinto(Pos, Migas, Laberinto):-
+
+dibujar_laberinto_con(Pos, Migas, Laberinto, Writer, TypeOfWrite):-
     laberinto_con_personaje_y_migas(Laberinto, personaje(Pos, "-@"), Migas, LaberintoDibujable),
-    % with_output_to(string(A),
-    %                 (set_stream(current_output, tty(true)),
-    %                 write_matrix_with(LaberintoDibujable, write_path))
-    %                ),
     tty:string_action(ho),
-    write_matrix_with(LaberintoDibujable, write_path),
-    % write(A),
-    sleep(0.05).
+    write_matrix_with(LaberintoDibujable, call(Writer, TypeOfWrite)),
+    sleep_after_dibujar(TypeOfWrite).
 
-% adelantar_espacio_si_resuelto(Pos, Laberinto, LaberintoDibujable):-
-%     resuelto(Pos, Laberinto), write_matrix_with(LaberintoDibujable, go_forward).
-adelantar_espacio_si_resuelto(Pos, Laberinto, _):-
-    not(resuelto(Pos, Laberinto)).
+sleep_after_dibujar(path):- sleep(0.05), !.
+sleep_after_dibujar(_).
 
 direccion_al_azar(Direccion):-
     findall(D, direccion(D), Direcciones),
     random_permutation(Direcciones, DireccionesAlAzar),
     member(Direccion, DireccionesAlAzar).
 
-paso(Pos, Laberinto, Direccion, NuevaPosicion):-
+paso(Pos, Laberinto, Direccion, NuevaPosicion, Migas):-
     direccion_al_azar(Direccion),
     nth_matrix1(Pos, Laberinto, _),
     tras_moverse(Direccion, Pos, NuevaPosicion),
-    casillero_libre(Laberinto, NuevaPosicion).
+    es_paso_valido(Laberinto,
+                   miga(NuevaPosicion, Direccion),
+                   [ miga(Pos, Direccion) | Migas]).
 
-siguiente_paso(Pos, Laberinto, Direccion, DireccionAnterior, NuevaPosicion):-
-    paso(Pos, Laberinto, Direccion, NuevaPosicion),
-    not(opuestas(Direccion, DireccionAnterior)).
+es_paso_valido(Laberinto, miga(NuevaPosicion, NuevaDireccion), Migas):-
+    casillero_libre(Laberinto, NuevaPosicion),
+    no_fue_recorrido(miga(NuevaPosicion, NuevaDireccion), Migas),
+    forall(nth0(0, Migas, miga(_, DireccionAnterior)),
+           not(opuestas(NuevaDireccion, DireccionAnterior))).
+
+no_fue_recorrido(miga(NuevaPosicion, _), Migas):-
+    not(member(miga(NuevaPosicion, _), Migas)).
 
 casillero_libre(Laberinto, Posicion):-
     nth_matrix1(Posicion, Laberinto, Casillero),
@@ -263,4 +318,3 @@ replace_matrix1(posicion(X, Y), Matrix, Element, NewMatrix) :-
 replace1(Index, List, Element, NewList) :-
     nth1(Index, List, _, Rest),
     nth1(Index, NewList, Element, Rest).
-
