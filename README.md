@@ -1,3 +1,9 @@
+
+
+https://user-images.githubusercontent.com/11432672/124823360-772c5c00-df47-11eb-9fd1-a7136400effd.mp4
+
+
+
 # GUARDA con tres cosas:
 1- como corre cada laberinto en un hilo diferente, puede que con hacer ctrl C + a de abort no pare :P.
 
